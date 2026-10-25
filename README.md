@@ -74,7 +74,15 @@ asset of this repository's
 3. Push the tag `v<version>` from `main` while `source.json` there still pins
    that commit. The version is the one the pinned commit's package states.
 4. Approve the run twice: in `release-source` before it fetches the source,
-   and in `release-build` before it builds it.
+   and in `release-build` before it builds it. Before you approve
+   `release-source`, confirm that the source's tests passed on the pinned
+   commit: the check run `Typecheck, test and package check` must have
+   concluded `success`.
+
+   ```sh
+   gh api "repos/apteoab/openbrf-modules/commits/<full commit id>/check-runs" \
+     --jq '.check_runs[] | [.name, .status, .conclusion] | @tsv'
+   ```
 
 The workflow refuses a tag that is not on `main`, whose `source.json` is not
 `main`'s, or that does not match the version, and a pin that is not on the
@@ -85,7 +93,9 @@ the release. Its job summary gives the sha512 and size for the catalog entry.
 It runs neither the addon's tests nor its typecheck: they read parts of the
 source outside the addon's directory, which the release never fetches.
 apteoab/openbrf-modules runs them on every pull request and every push to
-its main branch, the only branch a pin may name.
+its main branch, the only branch a pin may name, but nothing there keeps a
+commit whose tests fail off that branch. So the maintainer checks them before
+approving the run, as in step 4.
 
 The run logs of this repository are public, so the output of the source's
 dependency install and build stays out of them. A failed release says which
@@ -100,12 +110,14 @@ jobs that made the artifacts again, so the retried jobs find them deleted.
 The workflow relies on these repository settings:
 
 - releases are immutable;
+- every action a workflow uses must be pinned to a full commit id;
 - a tag ruleset lets only the maintainers create a `v*` tag, and nobody move or
   delete one;
 - a branch ruleset on `main` requires a pull request whose tests and title
   check pass, and refuses force pushes and deletion;
 - two environments, `release-source` and `release-build`, each allow only
-  `v*` tags, and a maintainer approves each run's job in each:
+  `v*` tags, and a maintainer approves each run's job in each. Neither lets
+  an administrator bypass that approval:
   - `release-source` holds `SOURCE_DEPLOY_KEY`, a read-only deploy key on
     apteoab/openbrf-modules that reads every module in that repository, not
     only the addon, and `SOURCE_ARCHIVE_KEY`;
