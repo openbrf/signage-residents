@@ -102,8 +102,8 @@ The workflow relies on these repository settings:
 - releases are immutable;
 - a tag ruleset lets only the maintainers create a `v*` tag, and nobody move or
   delete one;
-- a branch ruleset on `main` requires a pull request approved by someone other
-  than its author, and refuses force pushes and deletion;
+- a branch ruleset on `main` requires a pull request whose tests and title
+  check pass, and refuses force pushes and deletion;
 - two environments, `release-source` and `release-build`, each allow only
   `v*` tags, and a maintainer approves each run's job in each:
   - `release-source` holds `SOURCE_DEPLOY_KEY`, a read-only deploy key on
